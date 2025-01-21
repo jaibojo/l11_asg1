@@ -6,7 +6,7 @@ from tabulate import tabulate
 class HindiTokenizer:
     def __init__(self, file_path: str):
         self.file_path = file_path
-        self.vocab_size = 300
+        self.vocab_size = 1000
         self.special_tokens = ['<pad>', '<eos>', '<bos>', '<unk>']
         self.token_to_id = {}
         self.id_to_token = {}
@@ -22,11 +22,29 @@ class HindiTokenizer:
     
     def load_and_clean_text(self) -> str:
         """Load and clean the text"""
+        # Read file in chunks to handle large files
+        chunk_size = 1024 * 1024  # 1MB chunks
+        text = ""
+        
         with open(self.file_path, 'r', encoding='utf-8') as file:
-            text = file.read()
-        # Remove extra spaces and special characters
+            while True:
+                chunk = file.read(chunk_size)
+                if not chunk:
+                    break
+                text += chunk
+        
+        # Text cleaning steps
+        print("Cleaning text...")
+        text = re.sub(r'[०-९0-9]+', ' <num> ', text)
+        text = re.sub(r'[A-Za-z]+', ' <eng> ', text)
+        text = re.sub(r'[!@#$%^&*(),.?":{}|<>]', ' ', text)
+        text = re.sub(r'[\u0964\u0965]', ' ', text)
+        text = re.sub(r'[^\u0900-\u097F\s<>a-z]', '', text)
         text = re.sub(r'\s+', ' ', text)
-        text = re.sub(r'[^\u0900-\u097F\s]', '', text)  # Keep only Hindi characters and spaces
+        text = re.sub(r'<num>\s*<num>', '<num>', text)
+        text = re.sub(r'<eng>\s*<eng>', '<eng>', text)
+        
+        print("Text cleaning complete!")
         return text.strip()
     
     def add_token(self, token: str):
